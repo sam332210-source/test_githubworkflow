@@ -2,7 +2,7 @@ name: Test Github Action
 
 on:
   workflow_dispatch:
-    input:
+    inputs:
       dir-url:
       # Friendly description to be shown in the UI instead of 'name'
       description: 'dir url to be downloaded'
