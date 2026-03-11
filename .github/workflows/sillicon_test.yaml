@@ -1,0 +1,152 @@
+name: Silicon Hardware Testing
+
+on:
+  workflow_call:
+    inputs:
+      artifact-name:
+        required: true
+        type: string
+      dir-url:
+        required: true
+        type: string
+
+jobs:
+
+# -----------------------------
+# JOB 1 - Install Driver
+# -----------------------------
+
+  install-driver:
+
+    runs-on: [self-hosted, windows, sut]
+
+    env:
+      BASE_DIR: D:\MyProjects\githubworkflow
+      DRIVER_ZIP: driver.zip
+
+      DRIVER_DIR: D:\MyProjects\githubworkflow
+
+      FIRMWARE_NAME: data.json
+
+    steps:
+
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+
+    - name: Download firmware artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: artifact
+
+
+    - name: Verify firmware
+      shell: powershell
+      run: |
+        if (!(Test-Path "artifact\${{ env.FIRMWARE_NAME }}")) {
+            Write-Error "Firmware binary missing"
+            exit 1
+        }
+
+
+    - name: Ensure base directory exists
+      shell: powershell
+      run: |
+        if (!(Test-Path "${{ env.BASE_DIR }}")) {
+            New-Item -ItemType Directory -Path "${{ env.BASE_DIR }}"
+        }
+
+
+    - name: Clean old packages
+      shell: powershell
+      run: |
+
+        $driverZip="${{ env.BASE_DIR }}\${{ env.DRIVER_ZIP }}"
+
+        if (Test-Path $driverZip) { Remove-Item $driverZip -Force }
+
+        if (Test-Path "${{ env.DRIVER_DIR }}") {
+            Remove-Item "${{ env.DRIVER_DIR }}" -Recurse -Force
+        }
+
+    - name: Download driver.zip from Artifactory
+      shell: powershell
+      run: |
+
+        $headers=@{Authorization="Basic $encoded"}
+        curl -L "${{ inputs.dir-url }}" -o "${{ env.BASE_DIR }}\${{ env.DRIVER_ZIP }}"
+
+    - name: Extract driver package
+      shell: powershell
+      run: |
+        Expand-Archive `
+          -Path "${{ env.BASE_DIR }}\${{ env.DRIVER_ZIP }}" `
+          -DestinationPath "${{ env.DRIVER_DIR }}"
+
+    - name: Replace firmware in driver
+      shell: powershell
+      run: |
+
+        $source="artifact\${{ env.FIRMWARE_NAME }}"
+        $destination="${{ env.DRIVER_DIR }}\${{ env.FIRMWARE_NAME }}"
+
+        Copy-Item $source $destination -Force
+
+
+    - name: Reboot SUT
+      shell: powershell
+      run: |
+        shutdown /r /t 5
+
+
+# -----------------------------
+# JOB 2 - Silicon Testing
+# -----------------------------
+
+  run-silicon-tests:
+
+    needs: install-driver
+
+    runs-on: [self-hosted, windows, sut]
+
+    env:
+      DRIVER_DIR: D:\MyProjects\githubworkflow
+
+    steps:
+
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+
+    - name: Wait for system to stabilize
+      shell: powershell
+      run: |
+
+        Write-Host "Waiting for system to fully boot..."
+
+        Start-Sleep -Seconds 60
+
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
+
+
+    - name: Run silicon tests
+      shell: powershell
+      run: |
+
+        python scripts\run_silicon_tests.py `
+          --driver "${{ env.DRIVER_DIR }}" `
+          --deps "${{ env.TEST_SUITE_DIR }}"
+
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "Silicon tests failed"
+            exit 1
+        }
+
+
+    - name: Silicon tests completed
+      run: echo "Silicon testing completed successfully"
