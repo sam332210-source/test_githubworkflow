@@ -33,7 +33,7 @@ jobs:
       - name: Upload JSON artifact
         uses: actions/upload-artifact@v4
         with:
-          name: data.json
+          name: data
           path: build/data.json
 
       - name: Printing message
@@ -43,6 +43,7 @@ jobs:
   silicon-test:
     needs: build
     uses: ./.github/workflows/silicon_test.yml
+    secrets: inherit
     with:
-      artifact-name: data.json
+      artifact-name: data
       dir-url: https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.9.2/npp.8.9.2.portable.x64.zip

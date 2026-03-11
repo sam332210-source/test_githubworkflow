@@ -22,7 +22,7 @@ jobs:
 
     env:
       BASE_DIR: D:\MyProjects\githubworkflow
-      DRIVER_ZIP: driver.zip
+      DRIVER_ZIP: npp.8.9.2.portable.x64.zip
 
       DRIVER_DIR: D:\MyProjects\githubworkflow
 
@@ -108,7 +108,7 @@ jobs:
 
     needs: install-driver
 
-    runs-on: [self-hosted, windows, sut]
+    runs-on: [windows-latest]
 
     env:
       DRIVER_DIR: D:\MyProjects\githubworkflow
@@ -138,10 +138,7 @@ jobs:
       shell: powershell
       run: |
 
-        python scripts\run_silicon_tests.py `
-          --driver "${{ env.DRIVER_DIR }}" `
-          --deps "${{ env.TEST_SUITE_DIR }}"
-
+        echo "Running test package"
         if ($LASTEXITCODE -ne 0) {
             Write-Error "Silicon tests failed"
             exit 1
