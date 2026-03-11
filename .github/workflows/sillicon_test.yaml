@@ -18,13 +18,13 @@ jobs:
 
   install-driver:
 
-    runs-on: [self-hosted, windows, sut]
+    runs-on: windows-latest
 
     env:
       BASE_DIR: D:\MyProjects\githubworkflow
       DRIVER_ZIP: npp.8.9.2.portable.x64.zip
 
-      DRIVER_DIR: D:\MyProjects\githubworkflow
+      DRIVER_DIR: D:\MyProjects\githubworkflow\notepad
 
       FIRMWARE_NAME: data.json
 
@@ -74,8 +74,14 @@ jobs:
       shell: powershell
       run: |
 
-        $headers=@{Authorization="Basic $encoded"}
         curl -L "${{ inputs.dir-url }}" -o "${{ env.BASE_DIR }}\${{ env.DRIVER_ZIP }}"
+    
+    - name: Ensure driver directory exists
+      shell: powershell
+      run: |
+        if (!(Test-Path "${{ env.DRIVER_DIR }}")) {
+          New-Item -ItemType Directory -Path "${{ env.DRIVER_DIR }}"
+        }
 
     - name: Extract driver package
       shell: powershell
@@ -95,9 +101,8 @@ jobs:
 
 
     - name: Reboot SUT
-      shell: powershell
       run: |
-        shutdown /r /t 5
+        echo "rebooting system"
 
 
 # -----------------------------
@@ -108,7 +113,7 @@ jobs:
 
     needs: install-driver
 
-    runs-on: [windows-latest]
+    runs-on: windows-latest
 
     env:
       DRIVER_DIR: D:\MyProjects\githubworkflow
