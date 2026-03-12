@@ -51,7 +51,7 @@ jobs:
 
 
     - name: Ensure base directory exists
-      shell: powershell
+      shell: powershell -ExecutionPolicy Bypass -Command "{0}"
       run: |
         if (!(Test-Path "${{ env.BASE_DIR }}")) {
             New-Item -ItemType Directory -Path "${{ env.BASE_DIR }}"
@@ -59,7 +59,7 @@ jobs:
 
 
     - name: Clean old packages
-      shell: powershell
+      shell: powershell -ExecutionPolicy Bypass -Command "{0}"
       run: |
 
         $driverZip="${{ env.BASE_DIR }}\${{ env.DRIVER_ZIP }}"
@@ -71,28 +71,28 @@ jobs:
         }
 
     - name: Download driver.zip from Artifactory
-      shell: powershell
+      shell: powershell -ExecutionPolicy Bypass -Command "{0}"
       run: |
         Invoke-WebRequest `
         -Uri "${{ inputs.dir-url }}" `
         -OutFile "${{ env.BASE_DIR }}\${{ env.DRIVER_ZIP }}"
     
     - name: Ensure driver directory exists
-      shell: powershell
+      shell: powershell -ExecutionPolicy Bypass -Command "{0}"
       run: |
         if (!(Test-Path "${{ env.DRIVER_DIR }}")) {
           New-Item -ItemType Directory -Path "${{ env.DRIVER_DIR }}"
         }
 
     - name: Extract driver package
-      shell: powershell
+      shell: powershell -ExecutionPolicy Bypass -Command "{0}"
       run: |
         Expand-Archive `
           -Path "${{ env.BASE_DIR }}\${{ env.DRIVER_ZIP }}" `
           -DestinationPath "${{ env.DRIVER_DIR }}"
 
     - name: Replace firmware in driver
-      shell: powershell
+      shell: powershell -ExecutionPolicy Bypass -Command "{0}"
       run: |
 
         $source="artifact\${{ env.FIRMWARE_NAME }}"
@@ -141,7 +141,7 @@ jobs:
 
 
     - name: Run silicon tests
-      shell: powershell
+      shell: powershell -ExecutionPolicy Bypass -Command "{0}"
       run: |
 
         echo "Running test package"
