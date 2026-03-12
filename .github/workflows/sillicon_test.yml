@@ -3,7 +3,7 @@ name: Silicon Hardware Testing
 on:
   workflow_dispatch:
     inputs:
-      artifact-name:
+      artifact-path:
         required: true
         type: string
       dir-url:
@@ -30,43 +30,29 @@ jobs:
         shell: cmd
         run: |
           if not exist "%MARKER_FILE%" (
-              echo === First run: Installing driver ===
+              echo "=== First run: Installing driver ==="
 
-              :: Ensure base directory exists
               if not exist "%BASE_DIR%" mkdir "%BASE_DIR%"
 
-              :: Clean old packages
               if exist "%BASE_DIR%\%DRIVER_ZIP%" del /f "%BASE_DIR%\%DRIVER_ZIP%"
               if exist "%DRIVER_DIR%" rmdir /s /q "%DRIVER_DIR%"
 
-              :: Download driver.zip from Artifactory
               echo Downloading driver.zip...
               curl -L -o "%BASE_DIR%\%DRIVER_ZIP%" "${{ inputs.dir-url }}"
 
-              :: Ensure driver directory exists
               if not exist "%DRIVER_DIR%" mkdir "%DRIVER_DIR%"
 
-              :: Extract driver package
               echo Extracting driver package...
               tar -xf "%BASE_DIR%\%DRIVER_ZIP%" -C "%DRIVER_DIR%"
 
-              :: Download firmware artifact
-              echo Downloading firmware artifact...
-              powershell -Command "Download-File -Url '${{ inputs.artifact-name }}' -OutFile 'artifact\%FIRMWARE_NAME%'"
-
-              :: Verify firmware exists
-              if not exist "artifact\%FIRMWARE_NAME%" (
+              if not exist "${{ inputs.artifact-path }}" (
                   echo Firmware binary missing
                   exit /b 1
               )
+              copy /y "${{ inputs.artifact-path }}" "%DRIVER_DIR%\%FIRMWARE_NAME%"
 
-              :: Replace firmware in driver
-              copy /y "artifact\%FIRMWARE_NAME%" "%DRIVER_DIR%\%FIRMWARE_NAME%"
-
-              :: Create marker file
               echo DRIVER_INSTALLED > "%MARKER_FILE%"
 
-              :: Reboot system
               echo Rebooting system in 5 seconds...
               shutdown /r /t 5
               exit /b 0
@@ -78,7 +64,7 @@ jobs:
         shell: cmd
         run: |
           echo Waiting for system to stabilize...
-          timeout /t 300
+          timeout /t 60
 
       - name: Verify Python
         shell: cmd
