@@ -42,7 +42,7 @@ jobs:
 
   silicon-test:
     needs: build
-    uses: ./.github/workflows/silicon_test.yml
+    uses: ./.github/workflows/sillicon_test.yml
     secrets: inherit
     with:
       artifact-name: data
