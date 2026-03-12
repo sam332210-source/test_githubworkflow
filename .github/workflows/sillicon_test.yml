@@ -111,7 +111,7 @@ jobs:
       shell: cmd
       run: |
         echo Running test package
-        python Scripts\run_test.py
+        python Scripts\run_tests.py
 
     - name: Silicon tests completed
       shell: cmd
