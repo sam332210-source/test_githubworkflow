@@ -101,7 +101,7 @@ jobs:
       shell: cmd
       run: |
         echo Waiting for system to fully boot...
-        timeout /t 60 /nobreak
+        timeout /t 300 /nobreak
 
     - name: Verify Python
       shell: cmd
