@@ -111,7 +111,7 @@ jobs:
       shell: cmd
       run: |
         echo Running test package
-        python "%GITHUB_WORKSPACE%\Scripts\run_test.py"
+        python Scripts\run_test.py
 
     - name: Silicon tests completed
       shell: cmd
