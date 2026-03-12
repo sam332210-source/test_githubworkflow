@@ -101,7 +101,7 @@ jobs:
       shell: cmd
       run: |
         echo Waiting for system to fully boot...
-        timeout /t 300 /nobreak
+        powershell -Command "Start-Sleep -Seconds 300"
 
     - name: Verify Python
       shell: cmd
