@@ -73,8 +73,9 @@ jobs:
     - name: Download driver.zip from Artifactory
       shell: powershell
       run: |
-
-        curl -L "${{ inputs.dir-url }}" -o "${{ env.BASE_DIR }}\${{ env.DRIVER_ZIP }}"
+        Invoke-WebRequest `
+        -Uri "${{ inputs.dir-url }}" `
+        -OutFile "${{ env.BASE_DIR }}\${{ env.DRIVER_ZIP }}"
     
     - name: Ensure driver directory exists
       shell: powershell
