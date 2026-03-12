@@ -42,7 +42,7 @@ jobs:
 
 
     - name: Verify firmware
-      shell: powershell -ExecutionPolicy Bypass
+      shell: shell: powershell -ExecutionPolicy Bypass -Command "{0}"
       run: |
         if (!(Test-Path "artifact\${{ env.FIRMWARE_NAME }}")) {
             Write-Error "Firmware binary missing"
