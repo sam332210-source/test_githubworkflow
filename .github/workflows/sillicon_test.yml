@@ -18,7 +18,7 @@ jobs:
 
   install-driver:
 
-    runs-on: windows-latest
+    runs-on: [self-hosted, windows]
 
     env:
       BASE_DIR: D:\MyProjects\githubworkflow
@@ -114,7 +114,7 @@ jobs:
 
     needs: install-driver
 
-    runs-on: windows-latest
+    runs-on: [self-hosted, windows]
 
     env:
       DRIVER_DIR: D:\MyProjects\githubworkflow
