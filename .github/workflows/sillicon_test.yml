@@ -101,12 +101,12 @@ jobs:
       shell: cmd
       run: |
         echo Waiting for system to fully boot...
-        powershell -Command "Start-Sleep -Seconds 300"
+        powershell -Command "Start-Sleep -Seconds 10"
 
     - name: Show runner PATH
       shell: cmd
       run: echo %PATH%
-      
+
     - name: Run silicon tests
       shell: cmd
       run: |
