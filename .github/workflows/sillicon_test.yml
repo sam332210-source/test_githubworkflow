@@ -42,7 +42,7 @@ jobs:
 
 
     - name: Verify firmware
-      shell: powershell
+      shell: powershell -ExecutionPolicy Bypass
       run: |
         if (!(Test-Path "artifact\${{ env.FIRMWARE_NAME }}")) {
             Write-Error "Firmware binary missing"
@@ -53,7 +53,6 @@ jobs:
     - name: Ensure base directory exists
       shell: powershell
       run: |
-        Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
         if (!(Test-Path "${{ env.BASE_DIR }}")) {
             New-Item -ItemType Directory -Path "${{ env.BASE_DIR }}"
         }
