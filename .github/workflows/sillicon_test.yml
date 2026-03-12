@@ -111,7 +111,7 @@ jobs:
       shell: cmd
       run: |
         echo Running test package
-        python run_test.py
+        C:\Users\tarun\AppData\Local\Programs\Python\Python312\python.exe run_test.py
 
     - name: Silicon tests completed
       shell: cmd
