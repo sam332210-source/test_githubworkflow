@@ -76,12 +76,6 @@ jobs:
       run: |
         copy /y "artifact\%FIRMWARE_NAME%" "%DRIVER_DIR%\%FIRMWARE_NAME%"
 
-    - name: Reboot SUT
-      shell: cmd
-      run: |
-        echo Rebooting system in 5 seconds...
-  #shutdown /r /t 5
-
   # -----------------------------
   # JOB 2 - Silicon Testing
   # -----------------------------
@@ -111,7 +105,7 @@ jobs:
       shell: cmd
       run: |
         echo Running test package
-        python "%GITHUB_WORKSPACE%\.github\workflows\run_test.py"
+        python "%GITHUB_WORKSPACE%\tests\run_test.py"
 
     - name: Silicon tests completed
       shell: cmd
