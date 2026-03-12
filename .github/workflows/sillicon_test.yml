@@ -80,7 +80,7 @@ jobs:
       shell: cmd
       run: |
         echo Rebooting system in 5 seconds...
-        shutdown /r /t 5
+  #shutdown /r /t 5
 
   # -----------------------------
   # JOB 2 - Silicon Testing
