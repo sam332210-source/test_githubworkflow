@@ -12,20 +12,16 @@ on:
 
 jobs:
 
-# -----------------------------
-# JOB 1 - Install Driver
-# -----------------------------
-
+  # -----------------------------
+  # JOB 1 - Install Driver
+  # -----------------------------
   install-driver:
-
     runs-on: [self-hosted, windows]
 
     env:
       BASE_DIR: D:\MyProjects\githubworkflow
       DRIVER_ZIP: npp.8.9.2.portable.x64.zip
-
       DRIVER_DIR: D:\MyProjects\githubworkflow\notepad
-
       FIRMWARE_NAME: data.json
 
     steps:
@@ -33,88 +29,64 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-
     - name: Download firmware artifact
       uses: actions/download-artifact@v4
       with:
         name: ${{ inputs.artifact-name }}
         path: artifact
 
-
     - name: Verify firmware
-      shell: powershell -ExecutionPolicy Bypass -Command "{0}"
+      shell: cmd
       run: |
-        if (!(Test-Path "artifact\${{ env.FIRMWARE_NAME }}")) {
-            Write-Error "Firmware binary missing"
-            exit 1
-        }
-
+        if not exist "artifact\%FIRMWARE_NAME%" (
+          echo Firmware binary missing
+          exit /b 1
+        )
 
     - name: Ensure base directory exists
-      shell: powershell -ExecutionPolicy Bypass -Command "{0}"
+      shell: cmd
       run: |
-        if (!(Test-Path "${{ env.BASE_DIR }}")) {
-            New-Item -ItemType Directory -Path "${{ env.BASE_DIR }}"
-        }
-
+        if not exist "%BASE_DIR%" mkdir "%BASE_DIR%"
 
     - name: Clean old packages
-      shell: powershell -ExecutionPolicy Bypass -Command "{0}"
+      shell: cmd
       run: |
-
-        $driverZip="${{ env.BASE_DIR }}\${{ env.DRIVER_ZIP }}"
-
-        if (Test-Path $driverZip) { Remove-Item $driverZip -Force }
-
-        if (Test-Path "${{ env.DRIVER_DIR }}") {
-            Remove-Item "${{ env.DRIVER_DIR }}" -Recurse -Force
-        }
+        if exist "%BASE_DIR%\%DRIVER_ZIP%" del /f "%BASE_DIR%\%DRIVER_ZIP%"
+        if exist "%DRIVER_DIR%" rmdir /s /q "%DRIVER_DIR%"
 
     - name: Download driver.zip from Artifactory
-      shell: powershell -ExecutionPolicy Bypass -Command "{0}"
+      shell: cmd
       run: |
-        Invoke-WebRequest `
-        -Uri "${{ inputs.dir-url }}" `
-        -OutFile "${{ env.BASE_DIR }}\${{ env.DRIVER_ZIP }}"
-    
+        echo Downloading driver.zip...
+        curl -L -o "%BASE_DIR%\%DRIVER_ZIP%" "${{ inputs.dir-url }}"
+
     - name: Ensure driver directory exists
-      shell: powershell -ExecutionPolicy Bypass -Command "{0}"
+      shell: cmd
       run: |
-        if (!(Test-Path "${{ env.DRIVER_DIR }}")) {
-          New-Item -ItemType Directory -Path "${{ env.DRIVER_DIR }}"
-        }
+        if not exist "%DRIVER_DIR%" mkdir "%DRIVER_DIR%"
 
     - name: Extract driver package
-      shell: powershell -ExecutionPolicy Bypass -Command "{0}"
+      shell: cmd
       run: |
-        Expand-Archive `
-          -Path "${{ env.BASE_DIR }}\${{ env.DRIVER_ZIP }}" `
-          -DestinationPath "${{ env.DRIVER_DIR }}"
+        echo Extracting driver package...
+        tar -xf "%BASE_DIR%\%DRIVER_ZIP%" -C "%DRIVER_DIR%"
 
     - name: Replace firmware in driver
-      shell: powershell -ExecutionPolicy Bypass -Command "{0}"
+      shell: cmd
       run: |
-
-        $source="artifact\${{ env.FIRMWARE_NAME }}"
-        $destination="${{ env.DRIVER_DIR }}\${{ env.FIRMWARE_NAME }}"
-
-        Copy-Item $source $destination -Force
-
+        copy /y "artifact\%FIRMWARE_NAME%" "%DRIVER_DIR%\%FIRMWARE_NAME%"
 
     - name: Reboot SUT
-      shell: powershell -ExecutionPolicy Bypass -Command "{0}"
+      shell: cmd
       run: |
-        echo "rebooting system"
+        echo Rebooting system in 5 seconds...
+        shutdown /r /t 5
 
-
-# -----------------------------
-# JOB 2 - Silicon Testing
-# -----------------------------
-
+  # -----------------------------
+  # JOB 2 - Silicon Testing
+  # -----------------------------
   run-silicon-tests:
-
     needs: install-driver
-
     runs-on: [self-hosted, windows]
 
     env:
@@ -125,23 +97,25 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-
     - name: Wait for system to stabilize
-      shell: powershell -ExecutionPolicy Bypass -Command "{0}"
+      shell: cmd
       run: |
+        echo Waiting for system to fully boot...
+        timeout /t 60 /nobreak
 
-        Write-Host "Waiting for system to fully boot..."
-
-        Start-Sleep -Seconds 20
+    - name: Verify Python
+      shell: cmd
+      run: |
+        python --version
+        pip --version
 
     - name: Run silicon tests
-      shell: powershell -ExecutionPolicy Bypass -Command "{0}"
+      shell: cmd
       run: |
-
-        echo "Running test package"
+        echo Running test package
         python run_test.py
 
-
     - name: Silicon tests completed
-      shell: powershell -ExecutionPolicy Bypass -Command "{0}"
-      run: echo "Silicon testing completed successfully"
+      shell: cmd
+      run: |
+        echo Silicon testing completed successfully
