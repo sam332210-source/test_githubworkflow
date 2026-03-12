@@ -111,7 +111,7 @@ jobs:
       shell: cmd
       run: |
         echo Running test package
-        python D:\MyProjects\githubworkflow\.github\workflows\run_test.py
+        python D:\MyProjects\githubworkflow\test_githubworkflow\.github\workflows\run_test.py
 
     - name: Silicon tests completed
       shell: cmd
