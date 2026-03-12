@@ -101,6 +101,12 @@ jobs:
       shell: cmd
       run: echo %PATH%
 
+    - name: List workspace files
+      shell: cmd
+      run: |
+        echo Workspace: %GITHUB_WORKSPACE%
+        dir "%GITHUB_WORKSPACE%" /s /b
+        
     - name: Run silicon tests
       shell: cmd
       run: |
