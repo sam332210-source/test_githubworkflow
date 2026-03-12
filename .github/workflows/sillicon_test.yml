@@ -145,10 +145,7 @@ jobs:
       run: |
 
         echo "Running test package"
-        if ($LASTEXITCODE -ne 0) {
-            Write-Error "Silicon tests failed"
-            exit 1
-        }
+        python run_test.py
 
 
     - name: Silicon tests completed
