@@ -103,12 +103,6 @@ jobs:
         echo Waiting for system to fully boot...
         powershell -Command "Start-Sleep -Seconds 300"
 
-    - name: Verify Python
-      shell: cmd
-      run: |
-        python --version
-        pip --version
-
     - name: Run silicon tests
       shell: cmd
       run: |
