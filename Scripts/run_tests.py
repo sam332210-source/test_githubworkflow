@@ -2,7 +2,7 @@ import os
 import json
 import subprocess
 
-working_dir = "D:\\MyProjects\\githubworkflow\\aria2"
+working_dir = "D:\\MyProjects\\githubworkflow\\aria2\\aria2-1.37.0-win-32bit-build1"
 file_path = "data.json"
 
 file_path = os.path.join(working_dir, file_path)

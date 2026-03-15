@@ -27,10 +27,10 @@ jobs:
     steps:
 
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Download firmware artifact
-      uses: actions/download-artifact@v5
+      uses: actions/download-artifact@v8
       with:
         name: ${{ inputs.artifact-name }}
         path: artifact
@@ -69,12 +69,12 @@ jobs:
       shell: cmd
       run: |
         echo Extracting driver package...
-        tar -xf "%BASE_DIR%\%DRIVER_ZIP%" -C "%DRIVER_DIR%"
+        tar -xf "%BASE_DIR%\%DRIVER_ZIP%" -C "%DRIVER_DIR%\"aria2-1.37.0-win-32bit-build1"
 
-    - name: Replace firmware in driver
+    - name: Replace firmware in driver"
       shell: cmd
       run: |
-        copy /y "artifact\%FIRMWARE_NAME%" "%DRIVER_DIR%\%FIRMWARE_NAME%"
+        copy /y "artifact\%FIRMWARE_NAME%" "%DRIVER_DIR%\"aria2-1.37.0-win-32bit-build1"\%FIRMWARE_NAME%"
 
   # -----------------------------
   # JOB 2 - Silicon Testing
@@ -89,7 +89,7 @@ jobs:
     steps:
 
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Wait for system to stabilize
       shell: cmd
