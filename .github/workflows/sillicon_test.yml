@@ -2,9 +2,8 @@ name: Silicon Hardware Testing
 
 on:
   workflow_call:
-  workflow_dispatch:
     inputs:
-      artifact-path:
+      artifact-name:
         required: true
         type: string
       dir-url:
@@ -12,74 +11,110 @@ on:
         type: string
 
 jobs:
-  install-and-test:
+
+  # -----------------------------
+  # JOB 1 - Install Driver
+  # -----------------------------
+  install-driver:
     runs-on: [self-hosted, windows]
 
     env:
       BASE_DIR: D:\MyProjects\githubworkflow
-      DRIVER_ZIP: npp.8.9.2.portable.x64.zip
-      DRIVER_DIR: D:\MyProjects\githubworkflow\notepad
+      DRIVER_ZIP: aria2-1.37.0-win-32bit-build1.zip
+      DRIVER_DIR: D:\MyProjects\githubworkflow\aria2
       FIRMWARE_NAME: data.json
-      MARKER_FILE: D:\MyProjects\githubworkflow\notepad\driver_installed.txt
+      SUB_DIR: aria2-1.37.0-win-32bit-build1
 
     steps:
 
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v6
 
-      - name: Reboot-aware driver installation
-        shell: cmd
-        run: |
-          if not exist "%MARKER_FILE%" (
-              echo "=== First run: Installing driver ==="
+    - name: Download firmware artifact
+      uses: actions/download-artifact@v8
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: artifact
 
-              if not exist "%BASE_DIR%" mkdir "%BASE_DIR%"
+    - name: Verify firmware
+      shell: cmd
+      run: |
+        if not exist "artifact\%FIRMWARE_NAME%" (
+          echo Firmware binary missing
+          exit /b 1
+        )
 
-              if exist "%BASE_DIR%\%DRIVER_ZIP%" del /f "%BASE_DIR%\%DRIVER_ZIP%"
-              if exist "%DRIVER_DIR%" rmdir /s /q "%DRIVER_DIR%"
+    - name: Ensure base directory exists
+      shell: cmd
+      run: |
+        if not exist "%BASE_DIR%" mkdir "%BASE_DIR%"
 
-              echo Downloading driver.zip...
-              curl -L -o "%BASE_DIR%\%DRIVER_ZIP%" "${{ inputs.dir-url }}"
+    - name: Clean old packages
+      shell: cmd
+      run: |
+        if exist "%BASE_DIR%\%DRIVER_ZIP%" del /f "%BASE_DIR%\%DRIVER_ZIP%"
+        if exist "%DRIVER_DIR%" rmdir /s /q "%DRIVER_DIR%"
 
-              if not exist "%DRIVER_DIR%" mkdir "%DRIVER_DIR%"
+    - name: Download driver.zip from Artifactory
+      shell: cmd
+      run: |
+        echo Downloading driver.zip...
+        curl -L -o "%BASE_DIR%\%DRIVER_ZIP%" "${{ inputs.dir-url }}"
 
-              echo Extracting driver package...
-              tar -xf "%BASE_DIR%\%DRIVER_ZIP%" -C "%DRIVER_DIR%"
+    - name: Ensure driver directory exists
+      shell: cmd
+      run: |
+        if not exist "%DRIVER_DIR%" mkdir "%DRIVER_DIR%"
 
-              if not exist "${{ inputs.artifact-path }}" (
-                  echo Firmware binary missing
-                  exit /b 1
-              )
-              copy /y "${{ inputs.artifact-path }}" "%DRIVER_DIR%\%FIRMWARE_NAME%"
+    - name: Extract driver package
+      shell: cmd
+      run: |
+        echo Extracting driver package...
+        tar -xf "%BASE_DIR%\%DRIVER_ZIP%" -C "%DRIVER_DIR%
 
-              echo DRIVER_INSTALLED > "%MARKER_FILE%"
+    - name: Replace firmware in driver"
+      shell: cmd
+      run: |
+        copy /y "artifact\%FIRMWARE_NAME%" "%DRIVER_DIR%\%SUB_DIR%\%FIRMWARE_NAME%"
 
-              echo Rebooting system in 5 seconds...
-              shutdown /r /t 5
-              exit /b 0
-          ) else (
-              echo === System rebooted, continuing with silicon tests ===
-          )
+  # -----------------------------
+  # JOB 2 - Silicon Testing
+  # -----------------------------
+  run-silicon-tests:
+    needs: install-driver
+    runs-on: [self-hosted, windows]
 
-      - name: Wait for system stabilization
-        shell: cmd
-        run: |
-          echo Waiting for system to stabilize...
-          timeout /t 60
+    env:
+      DRIVER_DIR: D:\MyProjects\githubworkflow
 
-      - name: Verify Python
-        shell: cmd
-        run: |
-          python --version
-          pip --version
+    steps:
 
-      - name: Run silicon tests
-        shell: cmd
-        run: |
-          echo Running silicon test package...
-          python run_test.py
+    - name: Checkout repository
+      uses: actions/checkout@v6
 
-      - name: Silicon tests completed
-        shell: cmd
-        run: |
-          echo Silicon testing completed successfully
+    - name: Wait for system to stabilize
+      shell: cmd
+      run: |
+        echo Waiting for system to fully boot...
+        powershell -Command "Start-Sleep -Seconds 10"
+
+    - name: Show runner PATH
+      shell: cmd
+      run: echo %PATH%
+
+    - name: List workspace files
+      shell: cmd
+      run: |
+        echo Workspace: %GITHUB_WORKSPACE%
+        dir "%GITHUB_WORKSPACE%" /s /b
+
+    - name: Run silicon tests
+      shell: cmd
+      run: |
+        echo Running test package
+        python Scripts\run_tests.py
+
+    - name: Silicon tests completed
+      shell: cmd
+      run: |
+        echo Silicon testing completed successfully
