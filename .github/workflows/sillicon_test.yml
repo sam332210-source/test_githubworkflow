@@ -28,10 +28,10 @@ jobs:
     steps:
 
     - name: Checkout repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v4
 
     - name: Download firmware artifact
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@v5
       with:
         name: ${{ inputs.artifact-name }}
         path: artifact
@@ -90,7 +90,7 @@ jobs:
     steps:
 
     - name: Checkout repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v4
 
     - name: Wait for system to stabilize
       shell: cmd
