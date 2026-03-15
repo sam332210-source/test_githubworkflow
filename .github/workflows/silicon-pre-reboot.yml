@@ -1,7 +1,7 @@
 name: Silicon Hardware Pre-Reboot
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       artifact-name:
         required: true
