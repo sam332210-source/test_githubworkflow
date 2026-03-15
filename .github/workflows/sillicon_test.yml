@@ -76,6 +76,11 @@ jobs:
       shell: cmd
       run: |
         copy /y "artifact\%FIRMWARE_NAME%" "%DRIVER_DIR%\%SUB_DIR%\%FIRMWARE_NAME%"
+      
+    - name: Reboot System
+      shell: cmd
+      run: |
+        shutdown /r /t 15
 
   # -----------------------------
   # JOB 2 - Silicon Testing
