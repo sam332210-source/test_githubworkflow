@@ -48,8 +48,9 @@ jobs:
         set REF=main
 
         powershell -Command ^
-          "$body = @{ref='%REF%'; inputs=@{ 'artifact-name'='${{ inputs.artifact-name }}'; 'dir-url'='${{ inputs.dir-url }}' }} | ConvertTo-Json;" ^
-          "Invoke-RestMethod -Method POST -Uri 'https://api.github.com/repos/%REPO%/actions/workflows/%WORKFLOW_FILE%/dispatches' -Body $body -Headers @{ Authorization = 'Bearer $env:PAT_FOR_WORKFLOWS' }"
+          "$body = @{ ref = '%REF%'; inputs = @{ 'artifact-name' = '${{ inputs.artifact-name }}'; 'dir-url' = '${{ inputs.dir-url }}' } } | ConvertTo-Json -Depth 3;" ^
+          "$headers = @{ Authorization = 'Bearer $env:PAT_FOR_WORKFLOWS'; 'User-Agent' = 'GitHubActions' };" ^
+          "Invoke-RestMethod -Method POST -Uri 'https://api.github.com/repos/%REPO%/actions/workflows/%WORKFLOW_FILE%/dispatches' -Body $body -Headers $headers -ContentType 'application/json'"
 
     - name: Reboot system
       shell: cmd
