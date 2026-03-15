@@ -23,6 +23,7 @@ jobs:
       DRIVER_ZIP: aria2-1.37.0-win-32bit-build1.zip
       DRIVER_DIR: D:\MyProjects\githubworkflow\aria2
       FIRMWARE_NAME: data.json
+      SUB_DIR: aria2-1.37.0-win-32bit-build1
 
     steps:
 
@@ -69,12 +70,12 @@ jobs:
       shell: cmd
       run: |
         echo Extracting driver package...
-        tar -xf "%BASE_DIR%\%DRIVER_ZIP%" -C "%DRIVER_DIR%\"aria2-1.37.0-win-32bit-build1"
+        tar -xf "%BASE_DIR%\%DRIVER_ZIP%" -C "%DRIVER_DIR%\%SUB_DIR%
 
     - name: Replace firmware in driver"
       shell: cmd
       run: |
-        copy /y "artifact\%FIRMWARE_NAME%" "%DRIVER_DIR%\"aria2-1.37.0-win-32bit-build1"\%FIRMWARE_NAME%"
+        copy /y "artifact\%FIRMWARE_NAME%" "%DRIVER_DIR%\%SUB_DIR%\%FIRMWARE_NAME%"
 
   # -----------------------------
   # JOB 2 - Silicon Testing
