@@ -45,7 +45,7 @@ jobs:
         echo Triggering post-reboot workflow via GitHub API...
         set REPO=%GITHUB_REPOSITORY%
         set WORKFLOW_FILE=silicon-post-reboot.yml
-        set REF=main
+        set REF=release
         set TOKEN=%PAT_FOR_WORKFLOWS%
 
         powershell -Command ^
