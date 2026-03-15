@@ -70,7 +70,7 @@ jobs:
       shell: cmd
       run: |
         echo Extracting driver package...
-        tar -xf "%BASE_DIR%\%DRIVER_ZIP%" -C "%DRIVER_DIR%\%SUB_DIR%
+        tar -xf "%BASE_DIR%\%DRIVER_ZIP%" -C "%DRIVER_DIR%
 
     - name: Replace firmware in driver"
       shell: cmd
