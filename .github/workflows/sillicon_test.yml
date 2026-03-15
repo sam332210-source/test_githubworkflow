@@ -1,4 +1,4 @@
-name: Silicon Hardware Testing
+name: Silicon Hardware Auto-Reboot Testing
 
 on:
   workflow_call:
@@ -10,116 +10,82 @@ on:
         required: true
         type: string
 
-jobs:
+env:
+  BASE_DIR: D:\MyProjects\githubworkflow
+  DRIVER_ZIP: aria2-1.37.0-win-32bit-build1.zip
+  DRIVER_DIR: D:\MyProjects\githubworkflow\aria2
+  SUB_DIR: aria2-1.37.0-win-32bit-build1
+  POST_REBOOT_FLAG: D:\MyProjects\githubworkflow\.post_reboot  # marker file
 
-  # -----------------------------
-  # JOB 1 - Install Driver
-  # -----------------------------
-  install-driver:
+jobs:
+  silicon-test:
     runs-on: [self-hosted, windows]
 
-    env:
-      BASE_DIR: D:\MyProjects\githubworkflow
-      DRIVER_ZIP: aria2-1.37.0-win-32bit-build1.zip
-      DRIVER_DIR: D:\MyProjects\githubworkflow\aria2
-      FIRMWARE_NAME: data.json
-      SUB_DIR: aria2-1.37.0-win-32bit-build1
-
     steps:
-
     - name: Checkout repository
       uses: actions/checkout@v6
 
-    - name: Download firmware artifact
-      uses: actions/download-artifact@v8
-      with:
-        name: ${{ inputs.artifact-name }}
-        path: artifact
+    - name: Determine phase
+      shell: pwsh
+      id: phase
+      run: |
+        if (Test-Path "$env:POST_REBOOT_FLAG") {
+            Write-Host "Phase=post-reboot" 
+            echo "phase=post-reboot" >> $env:GITHUB_OUTPUT
+        } else {
+            Write-Host "Phase=pre-reboot"
+            echo "phase=pre-reboot" >> $env:GITHUB_OUTPUT
+        }
 
-    - name: Verify firmware
+    - name: Pre-Reboot Setup
+      if: steps.phase.outputs.phase == 'pre-reboot'
       shell: cmd
       run: |
-        if not exist "artifact\%FIRMWARE_NAME%" (
-          echo Firmware binary missing
-          exit /b 1
-        )
+        echo Setting up drivers and environment...
+        mkdir "%DRIVER_DIR%" 2>nul
+        powershell -Command "Expand-Archive -Path '%BASE_DIR%\%DRIVER_ZIP%' -DestinationPath '%DRIVER_DIR%' -Force"
 
-    - name: Ensure base directory exists
-      shell: cmd
-      run: |
-        if not exist "%BASE_DIR%" mkdir "%BASE_DIR%"
+        echo Creating post-reboot marker
+        powershell -Command "New-Item -ItemType File -Path '%POST_REBOOT_FLAG%' -Force"
 
-    - name: Clean old packages
-      shell: cmd
-      run: |
-        if exist "%BASE_DIR%\%DRIVER_ZIP%" del /f "%BASE_DIR%\%DRIVER_ZIP%"
-        if exist "%DRIVER_DIR%" rmdir /s /q "%DRIVER_DIR%"
-
-    - name: Download driver.zip from Artifactory
-      shell: cmd
-      run: |
-        echo Downloading driver.zip...
-        curl -L -o "%BASE_DIR%\%DRIVER_ZIP%" "${{ inputs.dir-url }}"
-
-    - name: Ensure driver directory exists
-      shell: cmd
-      run: |
-        if not exist "%DRIVER_DIR%" mkdir "%DRIVER_DIR%"
-
-    - name: Extract driver package
-      shell: cmd
-      run: |
-        echo Extracting driver package...
-        tar -xf "%BASE_DIR%\%DRIVER_ZIP%" -C "%DRIVER_DIR%
-
-    - name: Replace firmware in driver"
-      shell: cmd
-      run: |
-        copy /y "artifact\%FIRMWARE_NAME%" "%DRIVER_DIR%\%SUB_DIR%\%FIRMWARE_NAME%"
-      
-    - name: Reboot System
-      shell: cmd
-      run: |
+        echo Scheduling system reboot
         shutdown /r /t 15
 
-  # -----------------------------
-  # JOB 2 - Silicon Testing
-  # -----------------------------
-  run-silicon-tests:
-    needs: install-driver
-    runs-on: [self-hosted, windows]
+    - name: Wait for system to be back online
+      if: steps.phase.outputs.phase == 'post-reboot'
+      shell: pwsh
+      run: |
+        $maxRetries = 60
+        $retryCount = 0
+        $hostName = "localhost"
+        do {
+            Write-Host "Checking $hostName..."
+            if (Test-Connection -ComputerName $hostName -Count 1 -Quiet) {
+                Write-Host "Host is online!"
+                break
+            } else {
+                $retryCount++
+                Write-Host "Not reachable yet ($retryCount/$maxRetries)..."
+                Start-Sleep -Seconds 10
+            }
+        } while ($retryCount -lt $maxRetries)
 
-    env:
-      DRIVER_DIR: D:\MyProjects\githubworkflow
+        if ($retryCount -eq $maxRetries) {
+            throw "System did not come online in time."
+        }
 
-    steps:
-
-    - name: Checkout repository
-      uses: actions/checkout@v6
-
-    - name: Wait for system to stabilize
+    - name: Post-Reboot Silicon Tests
+      if: steps.phase.outputs.phase == 'post-reboot'
       shell: cmd
       run: |
-        echo Waiting for system to fully boot...
-        powershell -Command "Start-Sleep -Seconds 10"
-
-    - name: Show runner PATH
-      shell: cmd
-      run: echo %PATH%
-
-    - name: List workspace files
-      shell: cmd
-      run: |
-        echo Workspace: %GITHUB_WORKSPACE%
+        echo Listing workspace files:
         dir "%GITHUB_WORKSPACE%" /s /b
 
-    - name: Run silicon tests
-      shell: cmd
-      run: |
-        echo Running test package
+        echo Running silicon test package...
         python Scripts\run_tests.py
 
-    - name: Silicon tests completed
-      shell: cmd
-      run: |
+        echo Removing post-reboot marker
+        del "%POST_REBOOT_FLAG%"
+
         echo Silicon testing completed successfully
+        
