@@ -21,17 +21,17 @@ jobs:
 
     env:
       BASE_DIR: D:\MyProjects\githubworkflow
-      DRIVER_ZIP: npp.8.9.2.portable.x64.zip
-      DRIVER_DIR: D:\MyProjects\githubworkflow\notepad
+      DRIVER_ZIP: aria2-1.37.0-win-32bit-build1.zip
+      DRIVER_DIR: D:\MyProjects\githubworkflow\aria2
       FIRMWARE_NAME: data.json
 
     steps:
 
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Download firmware artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: ${{ inputs.artifact-name }}
         path: artifact
@@ -90,7 +90,7 @@ jobs:
     steps:
 
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Wait for system to stabilize
       shell: cmd
