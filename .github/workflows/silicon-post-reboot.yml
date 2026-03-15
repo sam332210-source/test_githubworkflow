@@ -1,0 +1,57 @@
+name: Silicon Hardware Post-Reboot
+
+on:
+  workflow_dispatch:
+    inputs:
+      artifact-name:
+        required: true
+        type: string
+      dir-url:
+        required: true
+        type: string
+
+env:
+  BASE_DIR: D:\MyProjects\githubworkflow
+  DRIVER_DIR: D:\MyProjects\githubworkflow\aria2
+  SUB_DIR: aria2-1.37.0-win-32bit-build1
+  POST_REBOOT_FLAG: D:\MyProjects\githubworkflow\.post_reboot
+
+jobs:
+  run-tests:
+    runs-on: [self-hosted, windows]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v6
+
+    - name: Wait for system to be ready
+      shell: cmd
+      run: |
+        echo Waiting for system to be reachable...
+        powershell -Command ^
+          "$maxRetries = 60; $retryCount = 0; $hostName = 'localhost';" ^
+          "do { if (Test-Connection -ComputerName $hostName -Count 1 -Quiet) { break } else { $retryCount++; Start-Sleep -Seconds 10 } }" ^
+          "while ($retryCount -lt $maxRetries);" ^
+          "if ($retryCount -eq $maxRetries) { throw 'System did not come online in time.' }"
+
+    - name: List workspace files
+      shell: cmd
+      run: |
+        echo Workspace files:
+        dir "%GITHUB_WORKSPACE%" /s /b
+
+    - name: Run silicon tests
+      shell: cmd
+      run: |
+        echo Running silicon test package...
+        python Scripts\run_tests.py
+
+    - name: Clean up marker
+      shell: cmd
+      run: |
+        powershell -Command "Remove-Item '%POST_REBOOT_FLAG%' -Force"
+
+    - name: Silicon testing completed
+      shell: cmd
+      run: |
+        echo Silicon testing completed successfully

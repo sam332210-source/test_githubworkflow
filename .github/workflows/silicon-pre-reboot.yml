@@ -1,0 +1,58 @@
+name: Silicon Hardware Pre-Reboot
+
+on:
+  workflow_call:
+    inputs:
+      artifact-name:
+        required: true
+        type: string
+      dir-url:
+        required: true
+        type: string
+
+env:
+  BASE_DIR: D:\MyProjects\githubworkflow
+  DRIVER_ZIP: aria2-1.37.0-win-32bit-build1.zip
+  DRIVER_DIR: D:\MyProjects\githubworkflow\aria2
+  SUB_DIR: aria2-1.37.0-win-32bit-build1
+  POST_REBOOT_FLAG: D:\MyProjects\githubworkflow\.post_reboot
+
+jobs:
+  setup-and-reboot:
+    runs-on: [self-hosted, windows]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v6
+
+    - name: Setup drivers
+      shell: cmd
+      run: |
+        echo Creating driver directory...
+        mkdir "%DRIVER_DIR%" 2>nul
+        powershell -Command "Expand-Archive -Path '%BASE_DIR%\%DRIVER_ZIP%' -DestinationPath '%DRIVER_DIR%' -Force"
+
+    - name: Create post-reboot marker
+      shell: cmd
+      run: |
+        powershell -Command "New-Item -ItemType File -Path '%POST_REBOOT_FLAG%' -Force"
+
+    - name: Trigger post-reboot workflow
+      shell: cmd
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo Triggering post-reboot workflow via GitHub API...
+        set REPO=%GITHUB_REPOSITORY%
+        set WORKFLOW_FILE=silicon-post-reboot.yml
+        set REF=main
+
+        powershell -Command ^
+          "$body = @{ref='%REF%'; inputs=@{ 'artifact-name'='${{ inputs.artifact-name }}'; 'dir-url'='${{ inputs.dir-url }}' }} | ConvertTo-Json;" ^
+          "Invoke-RestMethod -Method POST -Uri 'https://api.github.com/repos/%REPO%/actions/workflows/%WORKFLOW_FILE%/dispatches' -Body $body -Headers @{ Authorization = 'Bearer $env:GITHUB_TOKEN' }"
+
+    - name: Reboot system
+      shell: cmd
+      run: |
+        echo System will reboot in 15 seconds...
+        shutdown /r /t 15
